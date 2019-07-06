@@ -21,7 +21,7 @@ class BaseSimulator:
         #u,v,r,dheel,x,y,yaw,heel
         self.state=np.zeros(8)
         self.sailboat_model=SailBoatModel()
-        self.sail_list=np.linspace(-pi,pi,2*pi)
+        self.sail_list=np.linspace(-pi,pi,360)
         self.twind=np.zeros(2)
 
     #邓乃铭
@@ -101,15 +101,15 @@ class FleetRace(BaseSimulator):
         return v_angle, v_goal, v_sail_angle, v_rudder_angle, v_heading
     
     #秦操
-    def control(self,target):
+    def control(self,target,target_sail):
         e=target-self.state[6]
         rudder=self.rudder_controller.feedback(e)
         windforce=np.array([self.sailboat_model.cal_windforce(self.state,self.twind,s) for s in self.sail_list])
         if e>0:
-            windforce=windforce[np.where(windforce[:,2]>0)[0]]
+            sail_list=self.sail_list[np.where(windforce[:,2]>0)[0]]
         else:
-            windforce = windforce[np.where(windforce[:, 2] < 0)[0]]
-        sail=self.sail_list[np.argmax(windforce[:,0])]
+            sail_list = self.sail_list[np.where(windforce[:, 2] < 0)[0]]
+        sail=sail_list(np.argmin(np.abs(sail_list-target_sail)))
         return sail,rudder
 
     
@@ -122,7 +122,12 @@ class FleetRace(BaseSimulator):
                 self.k = self.k + 1
             if self.k>=len(self.goal):
                 break
-            planner_result=self.plannar()
+            v_angle, v_goal, v_sail_angle, v_rudder_angle, v_heading=self.plannar()
+            for i in range(5):
+                sail,rudder=self.control(v_angle,v_sail_angle)
+                for j in range(10):
+                    self.update_state()
+
 
 
 
