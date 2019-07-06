@@ -1,33 +1,31 @@
 import numpy as np
 from PID import PIDcontroller
-from numpy import sin,cos,pi,degrees,radians,arctan2,sqrt
+from numpy import sin,cos,pi,arctan2,sqrt
+import matplotlib.pyplot as plt
+from SailBoatModel import SailBoatModel
 
 
-
-#邓乃铭
-class SailBoatModel:
-    def cal_accelerate(self):
-        pass
-
-    def cal_windforce(self,state,wind,sail):
-        pass
-
-    def wind_to_absolute(self,wind):
-        return wind
-    
 class BaseSimulator:
     def __init__(self):
         self.dt=0.1
         #u,v,r,dheel,x,y,yaw,heel
         self.state=np.zeros(8)
-        self.sailboat_model=SailBoatModel()
+        self.sailboat_model=SailBoatModel(init_posx=self.state[4], init_posy=self.state[5], init_yaw=self.state[6], init_heel=self.state[7],\
+                init_u=self.state[0], init_v=self.state[1], init_r=self.state[2], init_dheel=self.state[3])
         self.sail_list=np.linspace(-pi,pi,360)
         self.twind=np.zeros(2)
 
     #邓乃铭
-    def update_state(self):
-        accelerate=self.sailboat_model.cal_accelerate()
-        pass
+    def update_state(self,sail,rudder):
+        self.sailboat_model.update(sail, rudder, self.twind[0], self.twind[1])
+        self.state[0] = self.sailboat_model.u
+        self.state[1] = self.sailboat_model.v
+        self.state[2] = self.sailboat_model.r
+        self.state[3] = self.sailboat_model.dheel
+        self.state[4] = self.sailboat_model.posx
+        self.state[5] = self.sailboat_model.posy
+        self.state[6] = self.sailboat_model.yaw
+        self.state[7] = self.sailboat_model.heel
     
 class FleetRace(BaseSimulator):
     def __init__(self):
@@ -50,7 +48,7 @@ class FleetRace(BaseSimulator):
         def true_wind(awv, awa, vx, vy, yaw, r): #awv相对风速 awa相对风向角（-pi，pi）船首来风为0,船尾来风pi，右舷为正。北东地坐标系，vx帆船对地x方向速度，vy帆船对地y方向速度，yaw帆船首向角，r帆船转首角速度
             airmar_x = 0.7
             airmar_vx = vx + sin(yaw) * r * airmar_x
-            airmar_vy = vy + cos(yaw) * r * airmar_x
+            airmar_vy = vy - cos(yaw) * r * airmar_x
             true_wind_x = awv * cos(awa + yaw + pi) + airmar_vx
             true_wind_y = awv * sin(awa + yaw + pi) + airmar_vy
             twv = sqrt(pow(true_wind_x, 2) + pow(true_wind_y, 2))
@@ -104,8 +102,9 @@ class FleetRace(BaseSimulator):
     #秦操
     def control(self,target,target_sail):
         e=target-self.state[6]
+        aws,awa=self.sailboat_model.tw2aw(self.twind[0],self.twind[1])
         rudder=self.rudder_controller.feedback(e)
-        windforce=np.array([self.sailboat_model.cal_windforce(self.state,self.twind,s) for s in self.sail_list])
+        windforce=np.array([self.sailboat_model.cal_windforce(self.state[0],self.state[1],self.state[2],self.state[7],self.state[3],aws,awa,sa,) for s in self.sail_list])
         if e>0:
             sail_list=self.sail_list[np.where(windforce[:,2]>0)[0]]
         else:
@@ -115,7 +114,9 @@ class FleetRace(BaseSimulator):
 
     
     #廖柯、林若轩
-    def run(self):
+    def run(self,fig_plot=True):
+
+
         while True:
             dpos=self.goal[self.k]-self.state[4:6]
             distance = sqrt(np.inner(dpos,dpos))
@@ -123,12 +124,26 @@ class FleetRace(BaseSimulator):
                 self.k = self.k + 1
             if self.k>=len(self.goal):
                 break
-            v_angle, v_goal, v_sail_angle, v_rudder_angle, v_heading=self.plannar()
+            v_angle, v_goal, v_sail_angle, v_rudder_angle, v_heading=self.planner()
             for i in range(5):
                 sail,rudder=self.control(v_angle,v_sail_angle)
                 for j in range(10):
-                    self.update_state()
-            planner_result=self.planner()
+                    self.update_state(sail,rudder)
+                if fig_plot:
+                    fig = plt.gca()
+                    fig.set_xlabel('E/m')
+                    fig.set_ylabel('N/m')
+                    fig.plot(self.goal[:, 1], self.goal[:, 0], "or", markersize=5)
+                    try:
+                        for plot_line in plot_lines:
+                            fig.lines.remove(plot_line[0])
+                    except:
+                        pass
+
+                    plot_lines = []
+                    plot_lines.append(fig.plot(self.state[5], self.state[4], "ob", markersize=5))
+                    plt.pause(0.0001)
+
 
 
 
