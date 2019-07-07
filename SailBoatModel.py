@@ -187,6 +187,19 @@ class SailBoatModel(object):
 		M = MS+MH
 		return X, Y, N, M
 
+
+	def cal_windforce(self, tws, twa, sa):
+
+		aws, awa = self.tw2aw(tws, twa)
+
+		XS, YS, NS, MS = self.SailModel(aws, awa, sa)
+
+		X = XS*np.cos(self.yaw)-YS*np.sin(self.yaw)
+		Y = XS*np.sin(self.yaw)+YS*np.cos(self.yaw)
+		N = NS
+		M = MS
+		return X, Y, N, M
+
 	def state_equation(self, sa, ra, tws, twa, mean_du=0, mean_dv=0, mean_dr=0, mean_ddheel=0,\
 					std_du=5.0e-2, std_dv=5.0e-2, std_dr=1.0e-2, std_ddheel=1.0e-2):
 
@@ -226,21 +239,21 @@ class SailBoatModel(object):
 
 
 
+if __name__ == '__main__':
+	ship = SailBoatModel()
 
-ship = SailBoatModel()
+	# Unit: m/s
+	current_tws = 5
+	# Unit: rad
+	current_twa = np.pi
 
-# Unit: m/s
-current_tws = 5
-# Unit: rad
-current_twa = np.pi
-
-# Unit: rad
-current_sa = 0
-current_ra = 0
+	# Unit: rad
+	current_sa = 0
+	current_ra = 0
 
 
-while True:
-	print("posx:{0:.2f} posy:{1:.2f} yaw:{2:.4f} heel:{3:.4f} u:{4:.4f} v:{5:.4f} r:{6:.6f} dheel:{7:.6f}".format(\
-		ship.posx, ship.posy, ship.yaw, ship.heel, ship.u, ship.v, ship.r, ship.dheel))
-	ship.update(sa=current_sa, ra=current_ra, tws=current_tws, twa=current_twa)
-	time.sleep(0.5)
+	while True:
+		print("posx:{0:.2f} posy:{1:.2f} yaw:{2:.4f} heel:{3:.4f} u:{4:.4f} v:{5:.4f} r:{6:.6f} dheel:{7:.6f}".format(\
+			ship.posx, ship.posy, ship.yaw, ship.heel, ship.u, ship.v, ship.r, ship.dheel))
+		ship.update(sa=current_sa, ra=current_ra, tws=current_tws, twa=current_twa)
+		time.sleep(0.5)
