@@ -155,11 +155,11 @@ class SailBoatModel(object):
 		D = cd*0.5*self.ad*aws*aws*self.sarea
 
 		if angle >= 0:
-		    X = -D*np.cos(angle)+L*np.sin(angle)
-		    Y = -D*np.sin(angle)-L*np.cos(angle)
-		if angle < 0:
-		    X = -D*np.cos(angle)-L*np.sin(angle)
-		    Y = -D*np.sin(angle)+L*np.cos(angle)
+			X = -D*np.cos(angle)+L*np.sin(angle)
+			Y = -D*np.sin(angle)-L*np.cos(angle)
+		else:
+			X = -D*np.cos(angle)-L*np.sin(angle)
+			Y = -D*np.sin(angle)+L*np.cos(angle)
 
 		XS = 2*(X*np.cos(sa)+Y*np.cos(sa+np.pi/2))
 		YS = 2*(X*np.sin(sa)+Y*np.sin(sa+np.pi/2))
@@ -248,8 +248,8 @@ if __name__ == '__main__':
 	current_twa = np.pi
 
 	# Unit: rad
-	current_sa = 0
-	current_ra = 0
+	current_sa = -0.09
+	current_ra = 0.07
 
 
 	while True:
